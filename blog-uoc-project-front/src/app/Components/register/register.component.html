@@ -1,0 +1,139 @@
+<div style="margin-left: auto; margin-right: auto">
+  <p id="registerFeedback"></p>
+</div>
+<div>
+  <h1>Register</h1>
+
+  <!-- TODO 18 -->
+  <form *ngIf="registerForm" [formGroup]="registerForm" (ngSubmit)="register()">
+    <div>
+      <label for="name">Name:</label>
+      <input id="name" type="text" [formControl]="name" />
+
+      <div *ngIf="name.errors">
+        <div
+          *ngIf="name.errors && isValidForm != null && !isValidForm"
+          [ngClass]="'error'"
+        >
+          <div *ngIf="name.errors.required">Name is required</div>
+          <div *ngIf="name.errors.minlength">
+            Name must be at least 5 characters long.
+          </div>
+          <div *ngIf="name.errors.maxlength">
+            Name can be max 25 characters long.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="surname_1">Surname 1:</label>
+      <input id="surname_1" type="text" [formControl]="surname_1" />
+
+      <div *ngIf="surname_1.errors">
+        <div
+          *ngIf="surname_1.errors && isValidForm != null && !isValidForm"
+          [ngClass]="'error'"
+        >
+          <div *ngIf="surname_1.errors.required">Surname 1 is required</div>
+          <div *ngIf="surname_1.errors.minlength">
+            Surname 1 must be at least 5 characters long.
+          </div>
+          <div *ngIf="surname_1.errors.maxlength">
+            Surname 1 can be max 25 characters long.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="surname_2">Surname 2:</label>
+      <input id="surname_2" type="text" [formControl]="surname_2" />
+
+      <div *ngIf="surname_2.errors">
+        <div
+          *ngIf="surname_2.errors && isValidForm != null && !isValidForm"
+          [ngClass]="'error'"
+        >
+          <div *ngIf="surname_2.errors.minlength">
+            Surname 2 must be at least 5 characters long.
+          </div>
+          <div *ngIf="surname_2.errors.maxlength">
+            Surname 2 can be max 25 characters long.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="alias">Alias:</label>
+      <input id="alias" type="text" [formControl]="alias" />
+
+      <div *ngIf="alias.errors">
+        <div
+          *ngIf="alias.errors && isValidForm != null && !isValidForm"
+          [ngClass]="'error'"
+        >
+          <div *ngIf="alias.errors.required">Alias is required</div>
+          <div *ngIf="alias.errors.minlength">
+            Alias must be at least 5 characters long.
+          </div>
+          <div *ngIf="alias.errors.maxlength">
+            Alias can be max 25 characters long.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="birth_date">Birth date:</label>
+      <input id="birth_date" type="date" [formControl]="birth_date" />
+
+      <div *ngIf="birth_date.errors">
+        <div
+          *ngIf="birth_date.errors && isValidForm != null && !isValidForm"
+          [ngClass]="'error'"
+        >
+          <div *ngIf="birth_date.errors.required">Birth date is required</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="email">Email:</label>
+      <input id="email" type="email" [formControl]="email" />
+
+      <div *ngIf="email.errors">
+        <div
+          *ngIf="email.errors && isValidForm != null && !isValidForm"
+          [ngClass]="'error'"
+        >
+          <div *ngIf="email.errors.required">Email is required</div>
+          <div *ngIf="email.errors.email">Email format is invalid</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="password">Password:</label>
+      <input id="password" type="password" [formControl]="password" />
+
+      <div *ngIf="password.errors">
+        <div
+          *ngIf="password.errors && isValidForm != null && !isValidForm"
+          [ngClass]="'error'"
+        >
+          <div *ngIf="password.errors.required">Password is required</div>
+          <div *ngIf="password.errors.minlength">
+            Password must be at least 8 characters long.
+          </div>
+          <div *ngIf="password.errors.maxlength">
+            Password can be max 16 characters long.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit">REGISTER</button>
+  </form>
+</div>
