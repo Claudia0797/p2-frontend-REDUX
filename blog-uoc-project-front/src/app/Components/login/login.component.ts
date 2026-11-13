@@ -12,6 +12,11 @@ import { LocalStorageService } from 'src/app/Services/local-storage.service';
 import { SharedService } from 'src/app/Services/shared.service';
 import { AuthDTO } from '../../Models/auth.dto';
 import { HeaderMenus } from '../../Models/header-menus.dto';
+import { catchError } from 'rxjs/operators';
+import { EMPTY } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { AppState } from 'src/app/app.reducer';
+import * as AuthActions from 'src/app/Store/auth/auth.actions';
 
 type LoginFormModel = {
   email: FormControl<string>;
@@ -39,6 +44,7 @@ export class LoginComponent implements OnInit {
     private headerMenusService: HeaderMenusService,
     private localStorageService: LocalStorageService,
     private router: Router,
+    private store: Store<AppState>
   ) {
     // TODO 20
 
@@ -67,7 +73,7 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  async login(): Promise<void> {
+   login(): void {
     this.isValidForm = false;
     if (this.loginForm.invalid) {
       return;
@@ -83,43 +89,6 @@ export class LoginComponent implements OnInit {
     this.loginUser.email = email;
     this.loginUser.password = password;
 
-    try {
-      const authToken = await this.authService.login(this.loginUser);
-
-      responseOK = true;
-      this.loginUser.user_id = authToken.user_id;
-      this.loginUser.access_token = authToken.access_token;
-
-      // Save token to localStorage
-      this.localStorageService.set('user_id', this.loginUser.user_id);
-      this.localStorageService.set('access_token', this.loginUser.access_token);
-    } catch (error: any) {
-      responseOK = false;
-      errorResponse = error.error;
-
-      const headerInfo: HeaderMenus = {
-        showAuthSection: false,
-        showNoAuthSection: true,
-      };
-
-      this.headerMenusService.headerManagement.next(headerInfo);
-      this.sharedService.errorLog(error.error);
-    }
-
-    await this.sharedService.managementToast(
-      'loginFeedback',
-      responseOK,
-      errorResponse,
-    );
-
-    if (responseOK) {
-      const headerInfo: HeaderMenus = {
-        showAuthSection: true,
-        showNoAuthSection: false,
-      };
-
-      this.headerMenusService.headerManagement.next(headerInfo);
-      this.router.navigateByUrl('home');
-    }
+    this.store.dispatch(AuthActions.loginRequest({ credentials: this.loginUser }));
   }
 }

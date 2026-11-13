@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { HeaderMenus } from 'src/app/Models/header-menus.dto';
-import { HeaderMenusService } from 'src/app/Services/header-menus.service';
-import { LocalStorageService } from 'src/app/Services/local-storage.service';
+import { Store } from '@ngrx/store';
+import { AppState } from 'src/app/app.reducer';
+import * as AuthActions from 'src/app/Store/auth/auth.actions';
 
 @Component({
   selector: 'app-header',
@@ -15,22 +15,22 @@ export class HeaderComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private headerMenusService: HeaderMenusService,
-    private localStorageService: LocalStorageService,
+    private store: Store<AppState>
   ) {
     this.showAuthSection = false;
     this.showNoAuthSection = true;
   }
 
   ngOnInit(): void {
-    this.headerMenusService.headerManagement.subscribe(
-      (headerInfo: HeaderMenus) => {
-        if (headerInfo) {
-          this.showAuthSection = headerInfo.showAuthSection;
-          this.showNoAuthSection = headerInfo.showNoAuthSection;
-        }
-      },
-    );
+    this.store.select('auth').subscribe((authState) => {
+      if(authState.accessToken) {
+        this.showAuthSection = true;
+        this.showNoAuthSection = false;
+      } else {
+        this.showAuthSection = false;
+        this.showNoAuthSection = true;
+      }
+    });
   }
 
   home(): void {
@@ -62,17 +62,6 @@ export class HeaderComponent implements OnInit {
   }
 
   logout(): void {
-    // TODO 15
-    this.localStorageService.remove('user_id');
-    this.localStorageService.remove('access_token');
-
-    const headerInfo: HeaderMenus = {
-      showAuthSection: false,
-      showNoAuthSection: true,
-    };
-
-    this.headerMenusService.headerManagement.next(headerInfo);
-
-    this.router.navigateByUrl('/home');
+   this.store.dispatch(AuthActions.logout());
   }
 }

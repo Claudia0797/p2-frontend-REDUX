@@ -1,65 +1,56 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { LocalStorageService } from 'src/app/Services/local-storage.service';
-import { PostService } from 'src/app/Services/post.service';
-import { SharedService } from 'src/app/Services/shared.service';
-import { PostDTO } from '../../../Models/post.dto';
+import { Store } from '@ngrx/store';
+import { take } from 'rxjs/operators';
+import { AppState } from 'src/app/app.reducer';
+import { PostDTO } from 'src/app/Models/post.dto';
+import * as PostsActions from 'src/app/Store/posts/posts.actions';
 
 @Component({
   selector: 'app-posts-list',
   templateUrl: './posts-list.component.html',
   styleUrls: ['./posts-list.component.scss'],
 })
-export class PostsListComponent {
+export class PostsListComponent implements OnInit {
   posts!: PostDTO[];
 
   constructor(
-    private postService: PostService,
     private router: Router,
-    private localStorageService: LocalStorageService,
-    private sharedService: SharedService,
-  ) {
-    this.loadPosts();
-  }
-  // TODO 12
+    private store: Store<AppState>
+  ) {}
 
-  private async loadPosts(): Promise<void> {
-    let errorResponse: any;
-    const userId = this.localStorageService.get('user_id');
+  ngOnInit(): void {
+    // 1. Nos suscribimos al Store para mantener la lista de posts siempre actualizada en pantalla
+    this.store.select('posts').subscribe((postsState) => {
+      this.posts = postsState.posts;
+    });
 
-    if (userId) {
-      try {
-        this.posts = await this.postService.getPostsByUserId(userId);
-      } catch (error: any) {
-        errorResponse = error.error;
-        this.sharedService.errorLog(errorResponse);
+    // 2. Extraemos el userId desde el estado global (Auth) en vez del localStorage
+    this.store.select('auth').pipe(take(1)).subscribe((authState) => {
+      if (authState.userId) {
+        // 3. Disparamos la acción para cargar solo los posts de este usuario
+        this.store.dispatch(
+          PostsActions.getPostsByUserIdRequest({ userId: authState.userId })
+        );
       }
-    }
+    });
   }
 
   createPost(): void {
-    this.router.navigateByUrl('/user/post');
+    this.router.navigateByUrl('/user/post/');
   }
 
   updatePost(postId: string): void {
     this.router.navigateByUrl('/user/post/' + postId);
   }
 
-  async deletePost(postId: string): Promise<void> {
-    let errorResponse: any;
-
+  deletePost(postId: string): void {
     const result = confirm('Confirm delete post with id: ' + postId + ' .');
-
+    
     if (result) {
-      try {
-        const rowsAffected = await this.postService.deletePost(postId);
-        if (rowsAffected.affected > 0) {
-          this.loadPosts();
-        }
-      } catch (error: any) {
-        errorResponse = error.error;
-        this.sharedService.errorLog(errorResponse);
-      }
+      // Solo lanzamos el "ticket".
+      // El Effect borrará en base de datos y el Reducer lo quitará de la memoria automáticamente.
+      this.store.dispatch(PostsActions.deletePostRequest({ postId }));
     }
   }
 }

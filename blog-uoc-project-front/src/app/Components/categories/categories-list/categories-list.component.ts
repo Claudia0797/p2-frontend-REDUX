@@ -1,70 +1,53 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { take } from 'rxjs/operators';
+import { AppState } from 'src/app/app.reducer';
 import { CategoryDTO } from 'src/app/Models/category.dto';
-import { CategoryService } from 'src/app/Services/category.service';
-import { LocalStorageService } from 'src/app/Services/local-storage.service';
-import { SharedService } from 'src/app/Services/shared.service';
+import * as CategoriesActions from 'src/app/Store/categories/categories.actions';
 
 @Component({
   selector: 'app-categories-list',
   templateUrl: './categories-list.component.html',
   styleUrls: ['./categories-list.component.scss'],
 })
-export class CategoriesListComponent {
+export class CategoriesListComponent implements OnInit {
   categories!: CategoryDTO[];
 
   constructor(
-    private categoryService: CategoryService,
     private router: Router,
-    private localStorageService: LocalStorageService,
-    private sharedService: SharedService,
-  ) {
-    this.loadCategories();
-  }
+    private store: Store<AppState>
+  ) {}
 
-  private async loadCategories(): Promise<void> {
-    let errorResponse: any;
-    const userId = this.localStorageService.get('user_id');
-    if (userId) {
-      try {
-        this.categories =
-          await this.categoryService.getCategoriesByUserId(userId);
-      } catch (error: any) {
-        errorResponse = error.error;
-        this.sharedService.errorLog(errorResponse);
+  ngOnInit(): void {
+    // 1. Nos suscribimos al Store para actualizar la tabla reactivamente
+    this.store.select('categories').subscribe((categoriesState) => {
+      this.categories = categoriesState.categories;
+    });
+
+    // 2. Obtenemos el userId desde el estado de Auth y pedimos las categorías
+    this.store.select('auth').pipe(take(1)).subscribe((authState) => {
+      if (authState.userId) {
+        this.store.dispatch(
+          CategoriesActions.getCategoriesByUserIdRequest({ userId: authState.userId })
+        );
       }
-    }
+    });
   }
 
   createCategory(): void {
-    // TODO 7
-    this.router.navigateByUrl('/user/category/');
+    this.router.navigateByUrl('/user/category/'); // O la ruta correspondiente de alta
   }
 
   updateCategory(categoryId: string): void {
-    // TODO 8
     this.router.navigateByUrl('/user/category/' + categoryId);
   }
 
-  async deleteCategory(categoryId: string): Promise<void> {
-    let errorResponse: any;
-
-    // show confirmation popup
-    let result = confirm(
-      'Confirm delete category with id: ' + categoryId + ' .',
-    );
+  deleteCategory(categoryId: string): void {
+    const result = confirm('Confirm delete category with id: ' + categoryId + ' .');
     if (result) {
-      try {
-        const rowsAffected =
-          await this.categoryService.deleteCategory(categoryId);
-        if (rowsAffected.affected > 0) {
-          // TODO 9
-          this.loadCategories();
-        }
-      } catch (error: any) {
-        errorResponse = error.error;
-        this.sharedService.errorLog(errorResponse);
-      }
+      // Despachamos la acción de borrado. El efecto y el reducer limpian la vista solos.
+      this.store.dispatch(CategoriesActions.deleteCategoryRequest({ categoryId }));
     }
   }
 }

@@ -17,7 +17,15 @@ import { ProfileComponent } from './Components/profile/profile.component';
 import { RegisterComponent } from './Components/register/register.component';
 import { FormatDatePipe } from './Pipes/format-date.pipe';
 import { AuthInterceptorService } from './Services/auth-interceptor.service';
-
+import { StoreModule } from '@ngrx/store';
+import { EffectsModule } from '@ngrx/effects';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { appReducers } from './app.reducer';
+import { AuthEffects } from './Store/auth/auth.effects';
+import { UserEffects } from './Store/user/user.effects';
+import { PostsEffects } from './Store/posts/posts.effects';
+import { CategoriesEffects } from './Store/categories/categories.effects';
+ 
 @NgModule({
   declarations: [
     AppComponent,
@@ -39,6 +47,9 @@ import { AuthInterceptorService } from './Services/auth-interceptor.service';
     AppRoutingModule,
     ReactiveFormsModule,
     HttpClientModule,
+    StoreModule.forRoot(appReducers), // 1. Iniciamos el Store con nuestros reducers
+    EffectsModule.forRoot([AuthEffects, UserEffects, PostsEffects, CategoriesEffects]), // 2. Iniciamos los Efectos (aquí iremos añadiendo los demás cuando los creemos)
+    StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: false }) // 3. Activamos la extensión del navegador para ver el estado visualmente
   ],
   providers: [
     {

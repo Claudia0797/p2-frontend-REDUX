@@ -12,6 +12,8 @@ import { SharedService } from 'src/app/Services/shared.service';
 import { UserService } from 'src/app/Services/user.service';
 import { HeaderMenus } from '../../Models/header-menus.dto';
 import { UserDTO } from '../../Models/user.dto';
+import { catchError } from 'rxjs/operators';
+import { EMPTY } from 'rxjs';
 
 type RegisterFormModel = {
   name: FormControl<string>;
@@ -122,10 +124,8 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  async register(): Promise<void> {
-    let responseOK = false;
+  register(): void {
     this.isValidForm = false;
-    let errorResponse: any;
 
     if (this.registerForm.invalid) {
       return;
@@ -151,35 +151,26 @@ export class RegisterComponent implements OnInit {
       raw.password,
     );
 
-    try {
-      await this.userService.register(this.registerUser);
-      responseOK = true;
-    } catch (error: any) {
-      responseOK = false;
-      errorResponse = error.error;
+    this.userService.register(this.registerUser).pipe(
+      catchError((error: any) => {
+        const headerInfo: HeaderMenus = {
+          showAuthSection: false,
+          showNoAuthSection: true,
+        };
+        this.headerMenusService.headerManagement.next(headerInfo);
 
-      const headerInfo: HeaderMenus = {
-        showAuthSection: false,
-        showNoAuthSection: true,
-      };
-      this.headerMenusService.headerManagement.next(headerInfo);
-
-      this.sharedService.errorLog(errorResponse);
-    }
-
-    await this.sharedService.managementToast(
-      'registerFeedback',
-      responseOK,
-      errorResponse,
-    );
-
-    if (responseOK) {
+        this.sharedService.errorLog(error.error);
+        this.sharedService.managementToast('registerFeedback', false, error.error);
+        return EMPTY;
+      })
+    ).subscribe(() => {
+      this.sharedService.managementToast('registerFeedback', true, undefined);
       this.registerForm.reset();
 
       // Volver a setear el birth_date por defecto
       this.birth_date.setValue(formatDate(new Date(), 'yyyy-MM-dd', 'en'));
 
       this.router.navigateByUrl('home');
-    }
+    });
   }
 }

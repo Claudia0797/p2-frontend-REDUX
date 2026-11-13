@@ -1,76 +1,50 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { HeaderMenus } from 'src/app/Models/header-menus.dto';
+import { Store } from '@ngrx/store';
+import { AppState } from 'src/app/app.reducer';
 import { PostDTO } from 'src/app/Models/post.dto';
-import { HeaderMenusService } from 'src/app/Services/header-menus.service';
-import { LocalStorageService } from 'src/app/Services/local-storage.service';
-import { PostService } from 'src/app/Services/post.service';
-import { SharedService } from 'src/app/Services/shared.service';
+import * as PostsActions from 'src/app/Store/posts/posts.actions';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
   posts!: PostDTO[];
   showButtons: boolean;
+
   constructor(
-    private postService: PostService,
-    private localStorageService: LocalStorageService,
-    private sharedService: SharedService,
     private router: Router,
-    private headerMenusService: HeaderMenusService,
+    private store: Store<AppState>
   ) {
     this.showButtons = false;
-    this.loadPosts();
   }
 
   ngOnInit(): void {
-    this.headerMenusService.headerManagement.subscribe(
-      (headerInfo: HeaderMenus) => {
-        if (headerInfo) {
-          this.showButtons = headerInfo.showAuthSection;
-        }
-      },
-    );
-  }
-  private async loadPosts(): Promise<void> {
-    // TODO 2
-    let errorResponse: any;
+    // 1. Escuchamos el estado de autenticación para mostrar/ocultar botones
+    this.store.select('auth').subscribe((authState) => {
+      this.showButtons = !!authState.accessToken;
+    });
 
-    const userId = this.localStorageService.get('user_id');
-    if (userId) {
-      this.showButtons = true;
-    }
+    // 2. Escuchamos el estado de los posts para actualizar la vista automáticamente
+    this.store.select('posts').subscribe((postsState) => {
+      this.posts = postsState.posts;
+    });
 
-    try {
-      this.posts = await this.postService.getPosts();
-    } catch (error: any) {
-      errorResponse = error.error;
-      this.sharedService.errorLog(errorResponse);
-    }
+    // 3. Disparamos la acción inicial para cargar los posts desde el backend
+    this.loadPosts();
   }
 
-  async like(postId: string): Promise<void> {
-    let errorResponse: any;
-    try {
-      await this.postService.likePost(postId);
-      this.loadPosts();
-    } catch (error: any) {
-      errorResponse = error.error;
-      this.sharedService.errorLog(errorResponse);
-    }
+  private loadPosts(): void {
+    this.store.dispatch(PostsActions.getPostsRequest());
   }
 
-  async dislike(postId: string): Promise<void> {
-    let errorResponse: any;
-    try {
-      await this.postService.dislikePost(postId);
-      this.loadPosts();
-    } catch (error: any) {
-      errorResponse = error.error;
-      this.sharedService.errorLog(errorResponse);
-    }
+  like(postId: string): void {
+    this.store.dispatch(PostsActions.likePostRequest({ postId }));
+  }
+
+  dislike(postId: string): void {
+    this.store.dispatch(PostsActions.dislikePostRequest({ postId }));
   }
 }

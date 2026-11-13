@@ -7,6 +7,8 @@ import {
 } from '@angular/forms';
 
 import { ActivatedRoute, Router } from '@angular/router';
+import { EMPTY } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CategoryDTO } from 'src/app/Models/category.dto';
 import { CategoryService } from 'src/app/Services/category.service';
 import { LocalStorageService } from 'src/app/Services/local-storage.service';
@@ -72,88 +74,69 @@ export class CategoryFormComponent implements OnInit {
     });
   }
 
-  async ngOnInit(): Promise<void> {
-    let errorResponse: any;
+  ngOnInit(): void {
 
     // update
     if (this.categoryId) {
       this.isUpdateMode = true;
-      try {
-        this.category = await this.categoryService.getCategoryById(
-          this.categoryId,
-        );
 
+      this.categoryService.getCategoryById(this.categoryId).pipe(
+        catchError((error: any) => {
+          this.sharedService.errorLog(error.error);
+          return EMPTY;
+        })
+      ).subscribe((category: CategoryDTO) => {
+        this.category = category;
         this.title.setValue(this.category.title);
         this.description.setValue(this.category.description);
         this.css_color.setValue(this.category.css_color);
-      } catch (error: any) {
-        errorResponse = error.error;
-        this.sharedService.errorLog(errorResponse);
-      }
+      });
     }
   }
 
-  private async editCategory(): Promise<boolean> {
-    let errorResponse: any;
-    let responseOK: boolean = false;
+  private editCategory(): void {
     if (this.categoryId) {
       const userId = this.localStorageService.get('user_id');
       if (userId) {
         this.category.userId = userId;
-        try {
-          await this.categoryService.updateCategory(
-            this.categoryId,
-            this.category,
-          );
-          responseOK = true;
-        } catch (error: any) {
-          errorResponse = error.error;
-          this.sharedService.errorLog(errorResponse);
-        }
 
-        await this.sharedService.managementToast(
-          'categoryFeedback',
-          responseOK,
-          errorResponse,
-        );
-
-        if (responseOK) {
+        this.categoryService.updateCategory(this.categoryId, this.category).pipe(
+          catchError((error: any) => {
+            this.sharedService.errorLog(error.error);
+            this.sharedService.managementToast('categoryFeedback', false, error.error);
+            this.validRequest = false;
+            return EMPTY;
+          })
+        ).subscribe(() => {
+          this.validRequest = true;
+          this.sharedService.managementToast('categoryFeedback', true, undefined);
           this.router.navigateByUrl('categories');
-        }
+        });        
       }
     }
-    return responseOK;
   }
 
-  private async createCategory(): Promise<boolean> {
-    let errorResponse: any;
-    let responseOK: boolean = false;
+  private createCategory(): void {
     const userId = this.localStorageService.get('user_id');
     if (userId) {
       this.category.userId = userId;
-      try {
-        await this.categoryService.createCategory(this.category);
-        responseOK = true;
-      } catch (error: any) {
-        errorResponse = error.error;
-        this.sharedService.errorLog(errorResponse);
-      }
 
-      await this.sharedService.managementToast(
-        'categoryFeedback',
-        responseOK,
-        errorResponse,
-      );
-
-      if (responseOK) {
+      this.categoryService.createCategory(this.category).pipe(
+        catchError((error: any) => {
+          this.sharedService.errorLog(error.error);
+          this.sharedService.managementToast('categoryFeedback', false, error.error);
+          this.validRequest = false;
+          return EMPTY;
+        })
+      ).subscribe(() => {
+        this.validRequest = true;
+        this.sharedService.managementToast('categoryFeedback', true, undefined);
         this.router.navigateByUrl('categories');
-      }
+      });
     }
-
-    return responseOK;
   }
 
-  async saveCategory() {
+  saveCategory() {
     this.isValidForm = false;
 
     if (this.categoryForm.invalid) {
@@ -166,9 +149,9 @@ export class CategoryFormComponent implements OnInit {
 
     // TODO 10
     if (this.isUpdateMode) {
-      this.validRequest = await this.editCategory();
+      this.editCategory();
     } else {
-      this.validRequest = await this.createCategory();
+      this.createCategory();
     }
   }
 }

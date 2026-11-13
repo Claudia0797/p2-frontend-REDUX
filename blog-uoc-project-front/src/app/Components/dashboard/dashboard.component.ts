@@ -1,46 +1,43 @@
 import { Component, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { AppState } from 'src/app/app.reducer';
 import { PostDTO } from 'src/app/Models/post.dto';
-import { PostService } from 'src/app/Services/post.service';
-import { SharedService } from 'src/app/Services/shared.service';
+import * as PostsActions from 'src/app/Store/posts/posts.actions';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss'],
+  styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  posts!: PostDTO[];
-  totalLikes: number;
-  totalDislikes: number;
 
-  constructor(
-    private postService: PostService,
-    private sharedService: SharedService,
-  ) {
-    this.totalLikes = 0;
-    this.totalDislikes = 0;
-  }
+  public totalLikes: number = 0;
+  public totalDislikes: number = 0;
+  public posts!: PostDTO[];
 
-  async ngOnInit(): Promise<void> {
-    await this.loadDashboardData();
-  }
+  constructor(private store: Store<AppState>) { }
 
-  private async loadDashboardData(): Promise<void> {
-    let errorResponse: any;
-
-    try {
-      this.posts = await this.postService.getPosts();
-
+  ngOnInit(): void {
+    // 1. Escuchamos el Store para obtener los posts y calcular las métricas
+    this.store.select('posts').subscribe((postsState) => {
+      this.posts = postsState.posts;
+      
+      // Reseteamos y recalculamos los totales basándonos en los datos reactivos del Store
       this.totalLikes = 0;
       this.totalDislikes = 0;
 
-      this.posts.forEach((post) => {
+      for (let post of this.posts) {
         this.totalLikes += post.num_likes;
         this.totalDislikes += post.num_dislikes;
-      });
-    } catch (error: any) {
-      errorResponse = error.error;
-      this.sharedService.errorLog(errorResponse);
-    }
+      }
+    });
+
+    // 2. Disparamos la carga inicial de datos al backend
+    this.loadDashboardData();
+  }
+
+  private loadDashboardData(): void {
+    // Ya no usamos async/await ni llamamos al servicio. El Effect se encarga.
+    this.store.dispatch(PostsActions.getPostsRequest());
   }
 }

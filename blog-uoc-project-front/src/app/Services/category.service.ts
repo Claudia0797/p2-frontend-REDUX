@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { CategoryDTO } from '../Models/category.dto';
+import { Observable } from 'rxjs';
 
 interface deleteResponse {
   affected: number;
@@ -18,36 +19,31 @@ export class CategoryService {
     this.urlBlogUocApi = 'http://localhost:3000/' + this.controller;
   }
 
-  getCategoriesByUserId(userId: string): Promise<CategoryDTO[]> {
+  getCategoriesByUserId(userId: string): Observable<CategoryDTO[]> {
     return this.http
-      .get<CategoryDTO[]>('http://localhost:3000/users/categories/' + userId)
-      .toPromise();
+      .get<CategoryDTO[]>('http://localhost:3000/users/categories/' + userId);
   }
 
-  createCategory(category: CategoryDTO): Promise<CategoryDTO> {
+  createCategory(category: CategoryDTO): Observable<CategoryDTO> {
     return this.http
-      .post<CategoryDTO>(this.urlBlogUocApi, category)
-      .toPromise();
+      .post<CategoryDTO>(this.urlBlogUocApi, category);
   }
 
-  getCategoryById(categoryId: string): Promise<CategoryDTO> {
+  getCategoryById(categoryId: string): Observable<CategoryDTO> {
     return this.http
-      .get<CategoryDTO>(this.urlBlogUocApi + '/' + categoryId)
-      .toPromise();
+      .get<CategoryDTO>(this.urlBlogUocApi + '/' + categoryId);
   }
 
   updateCategory(
     categoryId: string,
     category: CategoryDTO
-  ): Promise<CategoryDTO> {
+  ): Observable<CategoryDTO> {
     return this.http
-      .put<CategoryDTO>(this.urlBlogUocApi + '/' + categoryId, category)
-      .toPromise();
+      .put<CategoryDTO>(this.urlBlogUocApi + '/' + categoryId, category);
   }
 
-  deleteCategory(categoryId: string): Promise<deleteResponse> {
+  deleteCategory(categoryId: string): Observable<deleteResponse> {
     return this.http
-      .delete<deleteResponse>(this.urlBlogUocApi + '/' + categoryId)
-      .toPromise();
+      .delete<deleteResponse>(this.urlBlogUocApi + '/' + categoryId);
   }
 }

@@ -10,6 +10,8 @@ import { LocalStorageService } from 'src/app/Services/local-storage.service';
 import { SharedService } from 'src/app/Services/shared.service';
 import { UserService } from 'src/app/Services/user.service';
 import { UserDTO } from '../../Models/user.dto';
+import { catchError } from 'rxjs/operators';
+import { EMPTY } from 'rxjs';
 
 type ProfileFormModel = {
   name: FormControl<string>;
@@ -116,31 +118,33 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  async ngOnInit(): Promise<void> {
-    let errorResponse: any;
-
+  ngOnInit(): void {
     const userId = this.localStorageService.get('user_id');
-    if (!userId) return;
+    if (!userId) {
+      return;
+    } 
 
-    try {
-      const userData = await this.userService.getUSerById(userId);
-
-      this.profileForm.patchValue({
-        name: userData.name,
-        surname_1: userData.surname_1,
-        surname_2: userData.surname_2 ?? '',
-        alias: userData.alias,
-        birth_date: formatDate(userData.birth_date, 'yyyy-MM-dd', 'en'),
-        email: userData.email,
-        // password NO se rellena desde backend (normalmente)
+    this.userService.getUSerById(userId)
+      .pipe(
+        catchError((error: any) => {
+          this.sharedService.errorLog(error.error);
+          return EMPTY;
+        })
+      )
+      .subscribe((userData: UserDTO) => {
+         this.profileForm.patchValue({
+            name: userData.name,
+            surname_1: userData.surname_1,
+            surname_2: userData.surname_2 ?? '',
+            alias: userData.alias,
+            birth_date: formatDate(userData.birth_date, 'yyyy-MM-dd', 'en'),
+            email: userData.email,
+            // password NO se rellena desde backend (normalmente)
+          });
       });
-    } catch (error: any) {
-      errorResponse = error.error;
-      this.sharedService.errorLog(errorResponse);
-    }
   }
 
-  async updateUser(): Promise<void> {
+  updateUser(): void {
     let responseOK = false;
     this.isValidForm = false;
     let errorResponse: any;
@@ -167,19 +171,14 @@ export class ProfileComponent implements OnInit {
       raw.password,
     );
 
-    try {
-      await this.userService.updateUser(userId, this.profileUser);
-      responseOK = true;
-    } catch (error: any) {
-      responseOK = false;
-      errorResponse = error.error;
-      this.sharedService.errorLog(errorResponse);
-    }
-
-    await this.sharedService.managementToast(
-      'profileFeedback',
-      responseOK,
-      errorResponse,
-    );
+    this.userService.updateUser(userId, this.profileUser).pipe(
+      catchError((error: any) => {
+        this.sharedService.errorLog(error.error);
+        this.sharedService.managementToast('profileFeedback', false, error.error);
+        return EMPTY;
+      })
+    ).subscribe(() => {
+      this.sharedService.managementToast('profileFeedback', true, undefined);
+    });
   }
 }
